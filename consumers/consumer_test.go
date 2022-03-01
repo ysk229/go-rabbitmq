@@ -40,5 +40,5 @@ func TestConsumer(t *testing.T) {
 			},
 		),
 	)
-	select {}
+	//select {}
 }

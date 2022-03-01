@@ -47,5 +47,5 @@ func TestProducer(t *testing.T) {
 		)
 
 	}
-	select {}
+	//select {}
 }

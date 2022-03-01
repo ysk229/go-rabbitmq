@@ -51,7 +51,7 @@ func TestClient(t *testing.T) {
 
 	}
 
-	select {}
+	//select {}
 }
 
 func TestClientExchange(t *testing.T) {
@@ -94,7 +94,7 @@ func TestClientExchange(t *testing.T) {
 	//log.Println(channelClient)
 	log.Println(channelClient2)
 
-	select {}
+	//select {}
 }
 
 func TestConsumer(t *testing.T) {
@@ -129,7 +129,7 @@ func TestConsumer(t *testing.T) {
 			},
 		),
 	)
-	select {}
+	//select {}
 }
 
 func TestConsumer2(t *testing.T) {
@@ -156,5 +156,5 @@ func TestConsumer2(t *testing.T) {
 			},
 		),
 	)
-	select {}
+	//select {}
 }
