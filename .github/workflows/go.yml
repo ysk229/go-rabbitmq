@@ -10,7 +10,14 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-
+    services:
+      rabbitmq:
+        image: rabbitmq:3.8.5-management
+        env:
+          RABBITMQ_DEFAULT_USER: root
+          RABBITMQ_DEFAULT_PASS: 123456
+        ports:
+          - 5672:5672
     steps:
       - name: Set up Go 1.17
         uses: actions/setup-go@v2
