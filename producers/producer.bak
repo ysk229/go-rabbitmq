@@ -1,0 +1,374 @@
+package producers
+
+import (
+	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/ysk229/go-rabbitmq/channels"
+	"github.com/ysk229/go-rabbitmq/lib"
+	"log"
+	"time"
+)
+
+type ProducerOpt struct {
+	// Application or exchange specific fields,
+	// the headers exchange will inspect this field.
+	Headers lib.Table
+	// Mandatory makes the publishing mandatory, which means when a queue is not
+	// bound to the routing key a message will be sent back on the returns channel for you to handle.
+	Mandatory bool
+	// Immediate makes the publishing immediate, which means when a consumer is not available
+	// to immediately handle the new message, a message will be sent back on the returns channel for you to handle.
+	Immediate    bool
+	DeliveryMode bool
+	Exchange     string
+	RouteKey     string
+}
+type CallBack struct {
+	Fnc         func(confirmed amqp.Confirmation)
+	ResendDelay time.Duration //消息发送失败后，多久秒重发,默认是3s
+	ResendNum   int           //消息重发次数
+}
+
+type ProducerOption func(*Producer)
+
+type Producer struct {
+	*channels.Channel
+	publishSettings  *amqp.Publishing
+	opt              *ProducerOpt
+	cb               *CallBack
+	reliable         bool
+	notifyReturnChan chan amqp.Return
+	confirm          chan amqp.Confirmation
+	confirmChan          chan amqp.Confirmation
+}
+
+func NewProducer(ch *channels.Channel) *Producer {
+	p := &Producer{Channel: ch}
+	p.reliable = true
+	return p
+}
+
+func WithOptionsProducer(opt *ProducerOpt) ProducerOption {
+	return func(p *Producer) {
+		p.opt = opt
+	}
+}
+func WithOptionsProducerCallBack(cb *CallBack) ProducerOption {
+	return func(p *Producer) {
+		p.reliable = true
+		if cb.ResendDelay == 0 {
+			cb.ResendDelay = 3
+		}
+		//cb.ResendDelay =cb.ResendDelay*time.Second
+		p.cb = cb
+	}
+}
+
+func WithOptionsPublishSettings(s *amqp.Publishing) ProducerOption {
+	return func(p *Producer) {
+		if s.DeliveryMode == 0 {
+			s.DeliveryMode = 2
+		}
+		p.publishSettings = s
+	}
+}
+
+func (p *Producer) Publish(ch *channels.Channel, opts ...ProducerOption) *Producer {
+	// Loop through each option
+	for _, opt := range opts {
+		// Call the option giving the instantiated
+		// *House as the argument
+		opt(p)
+	}
+
+	log.Printf("publishing...")
+	if p.opt.Mandatory {
+		p.confirm = ch.Confirm6(make(chan amqp.Confirmation, 1))
+		p.notifyReturnChan = ch.NotifyReturn(make(chan amqp.Return, 1))
+		//j :=0
+		//go func(body []byte) {
+		//		select {
+		//		case confirm := <-p.NotifyConfirm2():
+		//			if !confirm.Ack && j < p.cb.ResendNum {
+		//				time.Sleep(p.cb.ResendDelay * time.Second)
+		//				//	//重发
+		//				j++
+		//				log.Printf("%p消息投递到queue失败,总共%d次，第%d次重发%s\n", ch.GetChannel(), p.cb.ResendNum, j, string(body))
+		//				p.producer(ch, opts...)
+		//
+		//			}
+		//		}
+		//
+		//}(p.publishSettings.Body)
+	}
+
+	//p.callBack(ch, opts...)
+	go func(body []byte) {
+		var currentTime = 0
+	LOOKUP:
+		for {
+			if currentTime > p.cb.ResendNum {
+				break LOOKUP
+			}
+			  p.producer(ch, opts...)
+
+			currentTime += 1
+			select {
+			case confirm := <-p.NotifyConfirm2():
+				if confirm.Ack {
+					break LOOKUP
+				} else if currentTime > 1 {
+					log.Printf("%p重发%d次，数据 %s!\n", ch, currentTime-1, body)
+				}
+			}
+			time.Sleep(p.cb.ResendDelay * time.Second)
+		}
+
+	}(p.publishSettings.Body)
+	//cf := p.NotifyConfirm(ch.GetChannel())
+	//go func() {
+	//	j := 0
+	//	for confirm := range cf {
+	//		if !confirm.Ack && j < p.cb.ResendNum {
+	//			time.Sleep(p.cb.ResendDelay * time.Second)
+	//			//	//重发
+	//			j++
+	//			log.Printf("%p消息投递到queue失败,总共%d次，第%d次重发%s\n", ch.GetChannel(), p.cb.ResendNum, j, string(p.publishSettings.Body))
+	//			p.producer(ch, opts...)
+	//
+	//		}
+	//	}
+	//}()
+
+	go func() {
+		j := 0
+		for data := range p.NotifyReturn() {
+			if j < p.cb.ResendNum {
+				time.Sleep(p.cb.ResendDelay * time.Second)
+				//	//重发
+				j++
+				log.Printf("%p消息投递到queue失败,总共%d次，第%d次重发%s\n", ch.GetChannel(), p.cb.ResendNum, j, string(data.Body))
+				p.producer(ch, opts...)
+
+			}
+		}
+	}()
+	return p
+}
+
+func (p *Producer) producer2(ch *channels.Channel, opts ...ProducerOption) {
+	// Loop through each option
+	for _, opt := range opts {
+		// Call the option giving the instantiated
+		// *House as the argument
+		opt(p)
+	}
+	err := ch.Publish(p.opt.Exchange, p.opt.RouteKey,
+		p.opt.Mandatory, // mandatory, true:若没有一个队列与交换器绑定，则将消息返还给生产者 , false:若交换器没有匹配到队列，消息直接丢弃
+		p.opt.Immediate, // immediate , true:队列没有对应的消费者，则将消息返还给生产者,
+		amqp.Publishing{
+			ContentType:  p.publishSettings.ContentType,
+			Body:         p.publishSettings.Body,
+			DeliveryMode: p.publishSettings.DeliveryMode,
+			Headers:      lib.WrapTable(p.opt.Headers),
+			Expiration:   p.publishSettings.Expiration,
+		})
+	if err != nil {
+		log.Println("Channel Publish ", err, ch.GetChannel().IsClosed())
+	}
+}
+func (p *Producer) producer(ch *channels.Channel, opts ...ProducerOption) string {
+	// Loop through each option
+	for _, opt := range opts {
+		// Call the option giving the instantiated
+		// *House as the argument
+		opt(p)
+	}
+	err := ch.Publish(p.opt.Exchange, p.opt.RouteKey,
+		p.opt.Mandatory, // mandatory, true:若没有一个队列与交换器绑定，则将消息返还给生产者 , false:若交换器没有匹配到队列，消息直接丢弃
+		p.opt.Immediate, // immediate , true:队列没有对应的消费者，则将消息返还给生产者,
+		amqp.Publishing{
+			ContentType:  p.publishSettings.ContentType,
+			Body:         p.publishSettings.Body,
+			DeliveryMode: p.publishSettings.DeliveryMode,
+			Headers:      lib.WrapTable(p.opt.Headers),
+			Expiration:   p.publishSettings.Expiration,
+		})
+	if err != nil {
+		log.Println("Channel Publish ", err, ch.GetChannel().IsClosed())
+	}
+	return string(p.publishSettings.Body)
+}
+func (p *Producer) callBack(ch *channels.Channel, opts ...ProducerOption) {
+	if !p.reliable {
+		return
+	}
+	// Loop through each option
+	for _, opt := range opts {
+		// Call the option giving the instantiated
+		// *House as the argument
+		opt(p)
+	}
+
+	if p.opt.Mandatory {
+		p.confirm = ch.Confirm6(make(chan amqp.Confirmation, 1))
+		p.notifyReturnChan = ch.NotifyReturn(make(chan amqp.Return, 1))
+
+	}
+	go func() {
+		j := 0
+		for data := range p.confirm {
+			log.Println(data)
+			if j < p.cb.ResendNum {
+				time.Sleep(p.cb.ResendDelay * time.Second)
+				//	//重发
+				j++
+				log.Println(data)
+				//log.Printf("%p消息投递到queue失败,总共%d次，第%d次重发%s\n", ch.GetChannel(), p.cb.ResendNum, j, string(data.Body))
+				//p.producer(ch, opts...)
+
+			}
+		}
+	}()
+	//处理消息投递exchange失败
+	go func() {
+		//j := 0
+
+		//for confirmed := range p.NotifyConfirm() {
+		//	log.Println(confirmed,"confirmed")
+		//	if !confirmed.Ack && j < p.cb.ResendNum  {
+		//		//处理消息投递exchange失败
+		//		time.Sleep(p.cb.ResendDelay * time.Second)
+		//		//重发
+		//		log.Printf("%p status %v 消息投递exchange失败,总共%d次，第%d次重发\n", ch.GetChannel(), ch.GetChannel().IsClosed(), p.cb.ResendNum, j)
+		//		p.Publish(ch.NewChannel(), opts...)
+		//	}
+		//	p.cb.Fnc(confirmed)
+		//}
+		//for {
+		//	select {
+		//	//处理消息投递exchange失败
+		//	case t := <-p.NotifyConfirm():
+		//		if t.Ack {
+		//			fmt.Println("消息被正常发送")
+		//		} else {
+		//			fmt.Println("消息被不正常发送")
+		//		}
+		//	}
+		//
+		//	//处理消息投递到queue失败
+		//	case data := <-p.NotifyReturn():
+		//		if j < p.cb.ResendNum {
+		//			time.Sleep(p.cb.ResendDelay * time.Second)
+		//			//	//重发
+		//			j++
+		//			log.Printf("%p消息投递到queue失败,总共%d次，第%d次重发%s\n", ch.GetChannel(), p.cb.ResendNum, j, string(data.Body))
+		//			p.producer(ch, opts...)
+		//
+		//		}
+		//	}
+		//}
+
+		//处理消息投递到queue失败  nc v
+	}()
+	go func() {
+		j := 0
+		for data := range p.NotifyReturn() {
+			if j < p.cb.ResendNum {
+				time.Sleep(p.cb.ResendDelay * time.Second)
+				//	//重发
+				j++
+				log.Printf("%p消息投递到queue失败,总共%d次，第%d次重发%s\n", ch.GetChannel(), p.cb.ResendNum, j, string(data.Body))
+				p.producer(ch, opts...)
+
+			}
+		}
+	}()
+
+	////处理消息投递exchange失败
+	//ch.CallBack(func(confirmed amqp.Confirmation) {
+	//	if !confirmed.Ack &&  p.cb.ResendNum >p.num  {
+	//		//处理消息投递exchange失败
+	//			time.Sleep(p.cb.ResendDelay * time.Second)
+	//			//重发
+	//			log.Printf("%p status %v 消息投递exchange失败,总共%d次，第%d次重发\n", ch.GetChannel(),ch.GetChannel().IsClosed(), p.cb.ResendNum, p.num)
+	//			p.Publish(ch.NewChannel(), opts...)
+	//	}
+	//	p.cb.Fnc(confirmed)
+	//})
+
+}
+
+// NotifyReturn registers a listener for basic.return methods.
+// These can be sent from the server when a publish is undeliverable either from the mandatory or immediate flags.
+func (p *Producer) NotifyReturn() <-chan amqp.Return {
+	return p.notifyReturnChan
+}
+func (p *Producer) NotifyConfirm(ch *amqp.Channel) <-chan amqp.Confirmation {
+	p.confirmChan = make(chan amqp.Confirmation)
+	  p.Confirm(ch)
+	return p.confirmChan
+}
+func (p *Producer) NotifyConfirm2() <-chan amqp.Confirmation {
+	return p.confirm
+}
+
+func (p *Producer) CallBack2(confirm <-chan amqp.Confirmation) {
+CallBack:
+	for {
+		select {
+		case confirmed, ok := <-confirm:
+			if !ok {
+				break CallBack
+			}
+			if !confirmed.Ack {
+				log.Printf("nack message %d, body: %q", confirmed.DeliveryTag, string(p.publishSettings.Body))
+			} else {
+				log.Printf("confirmed delivery with delivery tag: %d", confirmed.DeliveryTag)
+			}
+		}
+	}
+}
+
+func (p *Producer) CallBack3(ch *amqp.Channel, cb func(confirmed amqp.Confirmation, p *Producer)) {
+	c := p.Confirm2(ch)
+	go func() {
+		for confirmed := range c {
+			if !confirmed.Ack {
+				log.Printf("nack message %d, body: %q", confirmed.DeliveryTag, string(p.publishSettings.Body))
+			} else {
+				log.Printf("confirmed delivery with delivery tag: %d", confirmed.DeliveryTag)
+			}
+			cb(confirmed, p)
+		}
+	}()
+
+}
+
+func (p *Producer) Confirm3(ch *amqp.Channel)  {
+	//confirm := make(chan amqp.Confirmation, 1)
+	// publisher confirms for this channel/connection
+ 	 _ = ch.Confirm(false)
+	p.confirmChan  = ch.NotifyPublish(make(chan amqp.Confirmation, 1))
+}
+func (p *Producer) Confirm2(ch *amqp.Channel) chan amqp.Confirmation {
+	confirm := make(chan amqp.Confirmation, 1)
+	// publisher confirms for this channel/connection
+	if err := ch.Confirm(false); err != nil {
+		log.Printf("publisher confirms not supported")
+		close(confirm) // confirms not supported, simulate by always nacking
+	} else {
+		ch.NotifyPublish(confirm)
+	}
+	return confirm
+}
+func (p *Producer) Confirm(ch *amqp.Channel) chan amqp.Confirmation {
+	confirm := make(chan amqp.Confirmation, 1)
+	// publisher confirms for this channel/connection
+	if err := ch.Confirm(false); err != nil {
+		log.Printf("publisher confirms not supported")
+		close(confirm) // confirms not supported, simulate by always nacking
+	} else {
+		ch.NotifyPublish(confirm)
+	}
+	return confirm
+}

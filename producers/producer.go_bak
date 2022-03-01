@@ -1,0 +1,252 @@
+package producers
+
+import (
+	"fmt"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/ysk229/go-rabbitmq/channels"
+	"github.com/ysk229/go-rabbitmq/exchanges"
+	"github.com/ysk229/go-rabbitmq/lib"
+	"github.com/ysk229/go-rabbitmq/options"
+	"log"
+	"time"
+)
+
+type ProducerOpt struct {
+	// Application or exchange specific fields,
+	// the headers exchange will inspect this field.
+	Headers lib.Table
+	// Mandatory makes the publishing mandatory, which means when a queue is not
+	// bound to the routing key a message will be sent back on the returns channel for you to handle.
+	Mandatory bool
+	// Immediate makes the publishing immediate, which means when a consumer is not available
+	// to immediately handle the new message, a message will be sent back on the returns channel for you to handle.
+	Immediate    bool
+	DeliveryMode bool
+	Exchange     string
+	ExchangeType lib.ExchangeType
+	RouteKey     string
+}
+type CallBack struct {
+	Fnc         func(confirmed amqp.Confirmation)
+	ResendDelay time.Duration //消息发送失败后，多久秒重发,默认是3s
+	ResendNum   int           //消息重发次数
+}
+
+type ProducerOption func(*Producer)
+
+type Producer struct {
+	*channels.Channel
+	publishSettings  *amqp.Publishing
+	opt              *ProducerOpt
+	cb               *CallBack
+	reliable         bool
+	notifyReturnChan chan amqp.Return
+	confirmChan      chan amqp.Confirmation
+	failChan         chan []ProducerOption
+}
+
+func NewProducer(ch *channels.Channel) *Producer {
+	p := &Producer{Channel: ch}
+	p.reliable = true
+	return p
+}
+
+func WithOptionsProducer(opt *ProducerOpt) ProducerOption {
+	return func(p *Producer) {
+		p.opt = opt
+	}
+}
+func WithOptionsProducerCallBack(cb *CallBack) ProducerOption {
+	return func(p *Producer) {
+		p.reliable = true
+		if cb.ResendDelay == 0 {
+			cb.ResendDelay = 3
+		}
+		p.cb = cb
+	}
+}
+
+func WithOptionsPublishSettings(s *amqp.Publishing) ProducerOption {
+	return func(p *Producer) {
+		if s.DeliveryMode == 0 {
+			s.DeliveryMode = 2
+		}
+		p.publishSettings = s
+	}
+}
+
+func (p *Producer) Publish(ch *channels.Channel, opts ...ProducerOption) {
+	for _, opt := range opts {
+		opt(p)
+	}
+	ch.Num = p.cb.ResendNum
+	b := false
+	p.mandatoryReturnData(ch, opts...)
+	resendNum := p.cb.ResendNum
+	for {
+		if resendNum < 0 {
+			break
+		}
+		resendNum--
+		b = p.producer(ch, opts...)
+		if b {
+			log.Printf("%p消息投递exchange成功,数据 %s!\n", ch.GetChannel(),  p.publishSettings.Body)
+			break
+		}
+		time.Sleep(p.cb.ResendDelay * time.Second)
+
+	}
+	if b == false {
+		log.Printf("%p消息投递exchange失败,数据 %s!\n", ch, string(p.publishSettings.Body))
+	}
+
+}
+
+func (p *Producer) reliableReturnData(ch *channels.Channel, opts ...ProducerOption) {
+
+	if ch.Num < 0 {
+		return
+	}
+	if p.reliable {
+		//confirms := ch.NotifyPublish(make(chan amqp.Confirmation, 1))
+		//p.confirmChan  = ch.ConfirmOne(make(chan amqp.Confirmation, 1))
+		confirms := ch.ConfirmOne(make(chan amqp.Confirmation, 1))
+		// Loop through each option
+		for _, opt := range opts {
+			// Call the option giving the instantiated
+			// *House as the argument
+			opt(p)
+		}
+		if ch.GetChannel().IsClosed() {
+			//ch.Channel = p.NewChannel().Channel
+			////p.reliableReturnData(ch, opts...)
+			////p.mandatoryReturnData(ch, opts...)
+			c := ch.GetChannel()
+			_, _ = p.NewChannel().Exchange(exchanges.NewExchange(&options.Exchange{ExchangeName: p.opt.Exchange, ExchangeType: lib.Direct}))
+
+			for {
+				if !ch.GetChannel().IsClosed() {
+					log.Println(fmt.Sprintf("旧的channel%p", c), "新的channel", fmt.Sprintf("%p", ch.GetChannel()))
+					return
+				}
+				time.Sleep(300 * time.Millisecond)
+			}
+		}
+		//go func(body []byte) {
+		confirmed := <-confirms
+		body := p.publishSettings.Body
+		if confirmed.Ack {
+			log.Printf("%p消息投递exchange成功%v,数据 %s!\n", ch.GetChannel(), confirmed.DeliveryTag, p.publishSettings.Body)
+		} else {
+			if ch.Num == p.cb.ResendNum {
+				log.Printf("%p消息投递exchange失败,数据 %s!\n", ch.GetChannel(), body)
+			} else {
+				log.Printf("%p消息投递exchange失败%v,总共重发%d次,重发%d次，数据 %s!\n", ch.GetChannel(), ch.GetChannel().IsClosed(), p.cb.ResendNum, p.cb.ResendNum-ch.Num, body)
+
+			}
+			if ch.Num == 0 {
+				log.Printf(" fail %p %v", ch.GetChannel(), string(body))
+			}
+			//for {
+			//	if ch.Num < 1 {
+			//		break
+			//	}
+			//
+			//	time.Sleep(p.cb.ResendDelay * time.Second)
+			//	p.producer(ch, opts...)
+			//	ch.Num--
+			//}
+			ch.Num--
+			time.Sleep(p.cb.ResendDelay * time.Second)
+			p.producer(ch, opts...)
+		}
+
+		//}(p.publishSettings.Body)
+
+	}
+
+}
+
+func (p *Producer) mandatoryReturnData(ch *channels.Channel, opts ...ProducerOption) {
+	if p.opt.Mandatory {
+		// mandatory 若为true，在exchange正常且可以到达的情况下，如果exchange+routerKey无法将消息投递给queue，那么MQ会将消息返还给生产者
+		//           若为false，则直接丢弃
+		// Loop through each option
+		for _, opt := range opts {
+			// Call the option giving the instantiated
+			// *House as the argument
+			opt(p)
+		}
+		p.notifyReturnChan = ch.NotifyReturn(make(chan amqp.Return, 1))
+		go func() {
+			var currentNum = p.cb.ResendNum
+			for data := range p.NotifyReturn() {
+				for {
+					if currentNum == 0 {
+						log.Println(fmt.Sprintf("%p", ch.GetChannel()),"queue fail ...", data.ReplyCode, string(data.Body))
+					}
+					if currentNum < 0 {
+						break
+					}
+					if currentNum == p.cb.ResendNum {
+						log.Printf("%p消息投递到queue失败,状态码%d,数据%s\n", ch.GetChannel(), data.ReplyCode, string(data.Body))
+					} else {
+						log.Printf("%p消息投递到queue失败,总共%d次，第%d次重发%s\n", ch.GetChannel(), p.cb.ResendNum, p.cb.ResendNum-currentNum, string(data.Body))
+
+					}
+					time.Sleep(p.cb.ResendDelay * time.Second)
+
+					p.producer(ch, opts...)
+					currentNum--
+				}
+
+			}
+		}()
+
+	}
+}
+
+func (p *Producer) producer(ch *channels.Channel, opts ...ProducerOption) bool {
+	// Loop through each option
+	for _, opt := range opts {
+		// Call the option giving the instantiated
+		// *House as the argument
+		opt(p)
+	}
+	confirms := ch.ConfirmOne(make(chan amqp.Confirmation, 1))
+	//go p.reliableReturnData(ch, opts...)
+	//p.mandatoryReturnData(ch, opts...)
+	err := ch.Publish(p.opt.Exchange, p.opt.RouteKey,
+		p.opt.Mandatory, // mandatory, true:若没有一个队列与交换器绑定，则将消息返还给生产者 , false:若交换器没有匹配到队列，消息直接丢弃
+		p.opt.Immediate, // immediate , true:队列没有对应的消费者，则将消息返还给生产者,
+		amqp.Publishing{
+			ContentType:  p.publishSettings.ContentType,
+			Body:         p.publishSettings.Body,
+			DeliveryMode: p.publishSettings.DeliveryMode,
+			Headers:      lib.WrapTable(p.opt.Headers),
+			Expiration:   p.publishSettings.Expiration,
+		})
+	if err != nil || ch.GetChannel().IsClosed() {
+		c := ch.GetChannel()
+		log.Printf("%p Channel Publish %v err %v %p\n", ch, ch.GetChannel().IsClosed(), err, c)
+		if ch.GetChannel().IsClosed() {
+			_, _ = ch.NewChannel().Exchange(exchanges.NewExchange(&options.Exchange{ExchangeName: p.opt.Exchange, ExchangeType:p.opt.ExchangeType}))
+			log.Println(fmt.Sprintf("旧的channel %p",c),"新的channel",fmt.Sprintf("%p",ch.GetChannel()))
+			p.mandatoryReturnData(ch, opts...)
+		}
+	}
+	if cf := <-confirms; cf.Ack {
+		return true
+	} else {
+		return false
+	}
+}
+
+// NotifyReturn registers a listener for basic.return methods.
+// These can be sent from the server when a publish is undeliverable either from the mandatory or immediate flags.
+func (p *Producer) NotifyReturn() <-chan amqp.Return {
+	return p.notifyReturnChan
+}
+func (p *Producer) NotifyConfirm() <-chan amqp.Confirmation {
+	return p.confirmChan
+}
