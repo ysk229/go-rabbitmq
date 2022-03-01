@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	url        = flag.String("uri", "amqp://admin:123456@rabbitmq:5672", "AMQP URI")
+	url        = flag.String("uri", "amqp://admin:123456@127.0.0.1:5672", "AMQP URI")
 	exchange   = flag.String("exchange", "test-exchange7", "Durable, non-auto-deleted AMQP exchange name")
 	queue      = flag.String("queue", "test-queue", "Ephemeral AMQP queue name")
 	bindingKey = flag.String("key", "test-key2", "AMQP binding key")

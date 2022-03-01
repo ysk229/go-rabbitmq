@@ -13,7 +13,7 @@ import (
 func TestProducer(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	//new client mq
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "rabbitmq", 5672, "")
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
 	conn := connections.NewConnect().Open(url)
 
 	d := make(chan string, 10)
