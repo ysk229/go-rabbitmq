@@ -7,7 +7,7 @@ vet:
 	go vet ./...
 
 install-lint:
-	go get -u golang.org/x/lint/golint
+	go get golang.org/x/lint/golint
 	go list -f {{.Target}} golang.org/x/lint/golint
 
 lint:
