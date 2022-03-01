@@ -18,7 +18,7 @@ import (
 func TestClient(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	//new client mq
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "/")
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
 	mq := NewClient(url)
 	d := make(chan string, 10)
 	go func() {
@@ -57,7 +57,7 @@ func TestClient(t *testing.T) {
 func TestClientExchange(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	//new client mq
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "/")
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
 	mq := NewClient(url)
 	//new mq channel
 	channelClient := mq.GetChan()
@@ -100,7 +100,7 @@ func TestClientExchange(t *testing.T) {
 func TestConsumer(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	//new client mq
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "/")
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
 	mq := NewClient(url)
 	//new mq channel
 	channelClient := mq.GetChan()
@@ -135,7 +135,7 @@ func TestConsumer(t *testing.T) {
 func TestConsumer2(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	//new client mq
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "/")
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
 	mq := NewClient(url)
 	//new mq channel
 	channelClient := mq.GetChan()
