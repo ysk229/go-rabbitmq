@@ -7,7 +7,7 @@ Wrapper of [rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go) that pr
 [![Go Doc](https://godoc.org/github.com/ysk229/go-rabbitmq?status.svg)](https://pkg.go.dev/github.com/ysk229/go-rabbitmq)
 [![Go Report](https://goreportcard.com/badge/github.com/ysk229/go-rabbitmq)](https://goreportcard.com/report/github.com/ysk229/go-rabbitmq)
 [![Github Latest Release](https://img.shields.io/github/release/ysk229/go-rabbitmq.svg?style=flat)](https://github.com/ysk229/go-rabbitmq/releases/latest)
-[![Github Latest Tag](https://img.shields.io/github/tag/ysk229/go-rabbitmq.svg?style=flat)](https://github.com/sliveryou/arabbitmq/tags)
+[![Github Latest Tag](https://img.shields.io/github/tag/ysk229/go-rabbitmq.svg?style=flat)](https://github.com/ysk229/go-rabbitmq/tags)
 [![Github Stars](https://img.shields.io/github/stars/ysk229/go-rabbitmq.svg?style=flat)](https://github.com/ysk229/go-rabbitmq/stargazers)
 
 ## Motivation
