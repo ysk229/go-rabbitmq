@@ -2,7 +2,6 @@ package consumers
 
 import (
 	"fmt"
-	"github.com/rabbitmq/amqp091-go"
 	"github.com/ysk229/go-rabbitmq/channels"
 	"github.com/ysk229/go-rabbitmq/connections"
 	"github.com/ysk229/go-rabbitmq/lib"
@@ -28,7 +27,7 @@ func TestConsumer(t *testing.T) {
 			&ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
 		),
 		WithOptionsConsumerCallBack(
-			&CallBack{Fnc: func(delivery amqp091.Delivery) {
+			&CallBack{Fnc: func(delivery Delivery) {
 
 				time.Sleep(3 * time.Second)
 				if delivery.DeliveryTag == 1 {
