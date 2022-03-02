@@ -13,7 +13,7 @@ install-lint:
 	go list -f {{.Target}} golang.org/x/lint/golint
 
 lint:
-	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
+	go list ./... | grep -v /vendor/ | grep -v /msg/ | xargs -L1 golint -set_exit_status
 
 install-staticcheck:
 	cd /tmp && GOPROXY="" go get honnef.co/go/tools/cmd/staticcheck
