@@ -21,24 +21,28 @@ func TestConsumer(t *testing.T) {
 	routeKey := "go-test"
 	q := "go-test"
 	//i := 0
-	NewConsumer(channelClient).Consumer(
-		channelClient,
-		WithOptionsConsumer(
-			&ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
-		),
-		WithOptionsConsumerCallBack(
-			&CallBack{Fnc: func(delivery Delivery) {
+	go func() {
+		NewConsumer(channelClient).Consumer(
+			channelClient,
+			WithOptionsConsumer(
+				&ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
+			),
+			WithOptionsConsumerCallBack(
+				&CallBack{Fnc: func(delivery Delivery) {
 
-				time.Sleep(3 * time.Second)
-				if delivery.DeliveryTag == 1 {
-					_ = delivery.Ack(false)
-				} else {
-					_ = delivery.Nack(false, false)
-				}
-				log.Printf("%+v", delivery)
-			},
-			},
-		),
-	)
-	//select {}
+					time.Sleep(3 * time.Second)
+					if delivery.DeliveryTag == 1 {
+						_ = delivery.Ack(false)
+					} else {
+						_ = delivery.Nack(false, false)
+					}
+					log.Printf("%+v", delivery)
+				},
+				},
+			),
+		)
+	}()
+
+	log.Printf("running for %s", "10s")
+	time.Sleep(10 * time.Second)
 }

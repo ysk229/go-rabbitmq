@@ -1,7 +1,9 @@
 all: test fmt vet lint staticcheck
 
 test:
-	go test ./...
+	go test ./client_test.go
+	go test ./consumers/consumer_test.go
+	go test ./producers/producer_test.go
 
 vet:
 	go vet ./...

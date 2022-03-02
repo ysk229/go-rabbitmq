@@ -133,33 +133,3 @@ func TestClientExchange(t *testing.T) {
 	log.Println(channelClient)
 	log.Println(channelClient2)
 }
-
-func TestConsumer2(t *testing.T) {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	//new client mq
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
-	mq := NewClient(url)
-	//new mq channel
-	channelClient := mq.GetChan()
-	exchangeName := "go-test"
-	routeKey := "go-test"
-	q := "go-test"
-
-	go func() {
-		mq.GetConsumer().Consumer(
-			channelClient,
-			consumers.WithOptionsConsumer(
-				&consumers.ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
-			),
-			consumers.WithOptionsConsumerCallBack(
-				&consumers.CallBack{Fnc: func(delivery consumers.Delivery) {
-					log.Printf("%+v", delivery)
-				},
-				},
-			),
-		)
-	}()
-
-	log.Printf("running for %s", "10s")
-	time.Sleep(10 * time.Second)
-}
