@@ -32,14 +32,13 @@ func NewClient(url string) *Client {
 func (c *Client) ReConnection(url string) {
 	for {
 		if c.GetConnect().IsClosed() || c.GetChannel().IsClosed() {
-			select {
-			case <-c.ReConnectionChan():
-				log.Print("reconnecting ...")
-				c.Connect = connections.NewConnect().Open(url)
-				c.Channel = channels.NewChannel(c.Connection)
-				c.ReChannels()
-				log.Println("Connect is closed ", c.GetConnect().IsClosed(), ",Channel is closed ", c.GetChannel().IsClosed())
-			}
+			<-c.ReConnectionChan()
+			log.Print("reconnecting ...")
+			c.Connect = connections.NewConnect().Open(url)
+			c.Channel = channels.NewChannel(c.Connection)
+			c.ReChannels()
+			log.Println("Connect is closed ", c.GetConnect().IsClosed(), ",Channel is closed ", c.GetChannel().IsClosed())
+
 		}
 	}
 }

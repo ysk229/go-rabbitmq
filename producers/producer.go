@@ -86,27 +86,25 @@ LOOKUP:
 			break LOOKUP
 		}
 		p.publish(m)
-		select {
-		case cf := <-ch.GetConfirmChan():
-			if !cf.Ack {
-				log.Println("exchange error  ", body)
-				exchangeNum++
-				if exchangeNum == p.opt.ResendNum+1 {
-					log.Println("exchange fail data", body)
+		cf := <-ch.GetConfirmChan()
+		if !cf.Ack {
+			log.Println("exchange error  ", body)
+			exchangeNum++
+			if exchangeNum == p.opt.ResendNum+1 {
+				log.Println("exchange fail data", body)
+				Success = false
+			}
+		} else {
+			select {
+			case data := <-ch.GetReturnChan():
+				log.Println("queue error  data", body, ",ReplyCode ", data.ReplyCode, ",retry num", queueNum, ",return data ", string(data.Body))
+				queueNum++
+				if queueNum == p.opt.ResendNum+1 {
+					log.Println("queue fail data", body)
 					Success = false
 				}
-			} else {
-				select {
-				case data := <-ch.GetReturnChan():
-					log.Println("queue error  data", body, ",ReplyCode ", data.ReplyCode, ",retry num", queueNum, ",return data ", string(data.Body))
-					queueNum++
-					if queueNum == p.opt.ResendNum+1 {
-						log.Println("queue fail data", body)
-						Success = false
-					}
-				default:
-					break LOOKUP
-				}
+			default:
+				break LOOKUP
 			}
 		}
 

@@ -14,7 +14,6 @@ type Connect struct {
 	ConnNotifyClose chan *amqp.Error
 	//通道异常接收
 	ChNotifyClose chan *amqp.Error
-	isConnected   bool
 }
 
 // NewConnect new connect
