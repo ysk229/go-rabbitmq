@@ -2,7 +2,7 @@
 
 Wrapper of [rabbitmq/amqp091-go](https://github.com/rabbitmq/amqp091-go) that provides reconnection logic and sane defaults. Hit the project with a star if you find it useful ⭐
 
-
+[![Build Status](https://github.com/ysk229/go-rabbitmq/workflows/Go/badge.svg)](https://github.com/ysk229/go-rabbitmq/actions)
 [![Github License](https://img.shields.io/github/license/ysk229/go-rabbitmq.svg?style=flat)](https://github.com/ysk229/go-rabbitmq/blob/master/LICENSE)
 [![Go Doc](https://godoc.org/github.com/ysk229/go-rabbitmq?status.svg)](https://pkg.go.dev/github.com/ysk229/go-rabbitmq)
 [![Go Report](https://goreportcard.com/badge/github.com/ysk229/go-rabbitmq)](https://goreportcard.com/report/github.com/ysk229/go-rabbitmq)
