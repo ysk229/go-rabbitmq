@@ -46,8 +46,6 @@ mq := NewClient("amqp://user:pass@localhost")
 exchangeName := "go-test"
 routeKey := "go-test"
 q := "go-test"
-////消费者，确认是否消费成功
-//chanClient.Consumer().CallBack()
 mq.GetConsumer().Consumer(
     mq.GetChan(),
     consumers.WithOptionsConsumer(
@@ -95,7 +93,6 @@ NewClient("amqp://user:pass@localhost").GetProducer().Producer(
 
 }
 
-select {}
 
 ```
 
