@@ -2,9 +2,9 @@ all: test vet lint staticcheck
 
 test:
 	ls -lhat
-	go test ./client_test.go
-	go test ./consumers/consumer_test.go
-	go test ./producers/producer_test.go
+	go test client_test.go
+	go test consumers/consumer_test.go
+	go test producers/producer_test.go
 
 vet:
 	go vet ./...
