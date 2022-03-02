@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -16,14 +15,4 @@ func WrapTable(table Table) amqp.Table {
 	}
 
 	return amqpTable
-}
-
-// GenerateReplyToQueueName Generate Reply ToQueueName
-func GenerateReplyToQueueName() string {
-	return "reply-to-" + RandomStr()
-}
-
-// RandomStr Random Str
-func RandomStr() string {
-	return uuid.New().String()
 }
