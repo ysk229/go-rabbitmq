@@ -5,6 +5,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+// Table
 type Table map[string]interface{}
 
 // WrapTable eliminates the need for the amqp lib directly.
@@ -17,10 +18,12 @@ func WrapTable(table Table) amqp.Table {
 	return amqpTable
 }
 
+// GenerateReplyToQueueName
 func GenerateReplyToQueueName() string {
 	return "reply-to-" + RandomStr()
 }
 
+// RandomStr
 func RandomStr() string {
 	return uuid.New().String()
 }

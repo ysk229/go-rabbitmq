@@ -10,6 +10,7 @@ import (
 	"log"
 )
 
+// Client  struct
 type Client struct {
 	*connections.Connect
 	*channels.Channel
@@ -18,6 +19,7 @@ type Client struct {
 	channels            []*channels.Channel
 }
 
+// NewClient new client
 func NewClient(url string) *Client {
 	conn := connections.NewConnect().Open(url)
 	c := &Client{Connect: conn, Channel: channels.NewChannel(conn.Connection), closeConnectionChan: make(chan error)}
@@ -26,6 +28,7 @@ func NewClient(url string) *Client {
 	return c
 }
 
+// ReConnection Re Connection
 func (c *Client) ReConnection(url string) {
 	for {
 		if c.GetConnect().IsClosed() || c.GetChannel().IsClosed() {
@@ -64,13 +67,18 @@ func (c *Client) healthCheck() {
 		}
 	}
 }
+
+// ReConnectionChan Re Connection Chan
 func (c *Client) ReConnectionChan() chan error {
 	return c.closeConnectionChan
 }
 
+// GetChannels Get Channels
 func (c *Client) GetChannels() []*channels.Channel {
 	return c.channels
 }
+
+// ReChannels Re Channels
 func (c *Client) ReChannels() {
 	for index := range c.channels {
 		log.Println("reconnecting channel", index)
@@ -78,35 +86,39 @@ func (c *Client) ReChannels() {
 	}
 }
 
+// GetConnect Get Connect
 func (c *Client) GetConnect() *connections.Connect {
 	return c.Connect
 }
+
+// GetChan Get Chan
 func (c *Client) GetChan() *channels.Channel {
 	return c.Channel
 }
 
+// NewChan New Chan
 func (c *Client) NewChan() *channels.Channel {
 	ch := channels.NewChannel(c.Connect.Connection)
 	c.channels = append(c.channels, ch)
 	return ch
 }
 
+// GetProducer Get Producer
 func (c *Client) GetProducer() *producers.Producer {
-
 	return producers.NewProducer(c.Channel)
 }
-func (c *Client) NewChanProducer() *producers.Producer {
 
+// NewChanProducer New Chan Producer
+func (c *Client) NewChanProducer() *producers.Producer {
 	return producers.NewProducer(c.NewChan())
 }
 
+// GetConsumer  Get Consumer
 func (c *Client) GetConsumer() *consumers.Consumer {
 	return consumers.NewConsumer(c.Channel)
 }
 
+// NewChanConsumer New Chan Consumer
 func (c *Client) NewChanConsumer() *consumers.Consumer {
 	return consumers.NewConsumer(c.NewChan())
-}
-
-func (c *Client) RPC() {
 }

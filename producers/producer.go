@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// ProducerOpt
 type ProducerOpt struct {
 	// Mandatory makes the publishing mandatory, which means when a queue is not
 	// bound to the routing key a message will be sent back on the returns channel for you to handle.
@@ -26,24 +27,30 @@ type ProducerOpt struct {
 	ResendDelay  time.Duration //消息发送失败后，多久秒重发,默认是3s
 	ResendNum    int           //消息重发次数
 }
+
+// CallBack
 type CallBack struct {
 	Fnc func(ret msg.Ret)
 }
 
+// ProducerOption
 type ProducerOption func(*Producer)
 
+// Producer
 type Producer struct {
 	*channels.Channel
 	opt *ProducerOpt
 	cb  *CallBack
 }
 
+// NewProducer
 func NewProducer(ch *channels.Channel) *Producer {
 	p := &Producer{Channel: ch}
 
 	return p
 }
 
+// WithOptionsProducer
 func WithOptionsProducer(opt *ProducerOpt) ProducerOption {
 	return func(p *Producer) {
 		p.opt = opt
@@ -53,12 +60,14 @@ func WithOptionsProducer(opt *ProducerOpt) ProducerOption {
 	}
 }
 
+// WithOptionsProducerCallBack
 func WithOptionsProducerCallBack(cb *CallBack) ProducerOption {
 	return func(p *Producer) {
 		p.cb = cb
 	}
 }
 
+// Producer
 func (p *Producer) Producer(m *msg.Message, opts ...ProducerOption) {
 	for _, opt := range opts {
 		opt(p)

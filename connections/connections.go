@@ -6,6 +6,7 @@ import (
 	"log"
 )
 
+// Connect connect struct
 type Connect struct {
 	*amqp.Connection
 	*channels.Channel

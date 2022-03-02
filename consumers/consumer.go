@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// ConsumerOpt consumer options
 type ConsumerOpt struct {
 	QueueName    string
 	RoutingKey   string
@@ -36,25 +37,34 @@ type ConsumerOpt struct {
 	ResendNum   int           //消息重发次数
 
 }
+
+// CallBack call back consumer
 type CallBack struct {
 	Fnc func(Delivery)
 }
+
+// Delivery consumer result data
 type Delivery struct {
 	amqp.Delivery
 }
+
+// ConsumerOption
 type ConsumerOption func(*Consumer)
 
+// Consumer
 type Consumer struct {
 	*channels.Channel
 	opt *ConsumerOpt
 	cb  *CallBack
 }
 
+// NewConsumer
 func NewConsumer(ch *channels.Channel) *Consumer {
 	c := &Consumer{Channel: ch}
 	return c
 }
 
+// WithOptionsConsumer
 func WithOptionsConsumer(opt *ConsumerOpt) ConsumerOption {
 	return func(c *Consumer) {
 		c.opt = opt
@@ -65,12 +75,14 @@ func WithOptionsConsumer(opt *ConsumerOpt) ConsumerOption {
 	}
 }
 
+// WithOptionsConsumerCallBack
 func WithOptionsConsumerCallBack(cb *CallBack) ConsumerOption {
 	return func(c *Consumer) {
 		c.cb = cb
 	}
 }
 
+// Consumer
 func (c *Consumer) Consumer(ch *channels.Channel, opts ...ConsumerOption) {
 	for _, opt := range opts {
 		opt(c)
