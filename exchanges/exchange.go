@@ -4,12 +4,12 @@ import (
 	"github.com/ysk229/go-rabbitmq/options"
 )
 
-// Exchange
+// Exchange exchange
 type Exchange struct {
 	*options.Exchange
 }
 
-// NewExchange
+// NewExchange New Exchange
 func NewExchange(e *options.Exchange) *Exchange {
 	e.Durable = true
 	return &Exchange{Exchange: e}

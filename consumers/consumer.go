@@ -48,23 +48,23 @@ type Delivery struct {
 	amqp.Delivery
 }
 
-// ConsumerOption
+// ConsumerOption Consumer Option
 type ConsumerOption func(*Consumer)
 
-// Consumer
+// Consumer consumer
 type Consumer struct {
 	*channels.Channel
 	opt *ConsumerOpt
 	cb  *CallBack
 }
 
-// NewConsumer
+// NewConsumer New Consumer
 func NewConsumer(ch *channels.Channel) *Consumer {
 	c := &Consumer{Channel: ch}
 	return c
 }
 
-// WithOptionsConsumer
+// WithOptionsConsumer With Options Consumer
 func WithOptionsConsumer(opt *ConsumerOpt) ConsumerOption {
 	return func(c *Consumer) {
 		c.opt = opt
@@ -75,14 +75,14 @@ func WithOptionsConsumer(opt *ConsumerOpt) ConsumerOption {
 	}
 }
 
-// WithOptionsConsumerCallBack
+// WithOptionsConsumerCallBack With Options Consumer CallBack
 func WithOptionsConsumerCallBack(cb *CallBack) ConsumerOption {
 	return func(c *Consumer) {
 		c.cb = cb
 	}
 }
 
-// Consumer
+// Consumer consumer
 func (c *Consumer) Consumer(ch *channels.Channel, opts ...ConsumerOption) {
 	for _, opt := range opts {
 		opt(c)

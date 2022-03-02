@@ -4,7 +4,7 @@ import (
 	"github.com/ysk229/go-rabbitmq/lib"
 )
 
-// Exchange
+// Exchange Exchange
 type Exchange struct {
 	ExchangeName string
 	// Exchange type the routing algorithm used depends on this
@@ -22,7 +22,7 @@ type Exchange struct {
 	Args lib.Table
 }
 
-// QueueBind
+// QueueBind QueueBind
 type QueueBind struct {
 	Queue      string
 	Exchange   string
@@ -31,7 +31,7 @@ type QueueBind struct {
 	Args       lib.Table
 }
 
-// Queue
+// Queue Queue
 type Queue struct {
 	QueueName string
 	// Durable queues remain active when a server restarts. Non-durable queues (transient queues) are purged if/when a server restarts.

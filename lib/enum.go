@@ -3,33 +3,33 @@ package lib
 import amqp "github.com/rabbitmq/amqp091-go"
 
 const (
-	// Transient
+	// Transient Transient
 	Transient = amqp.Transient
-	// Persistent
+	// Persistent Persistent
 	Persistent = amqp.Persistent
 )
 
-// AcknowledgementMode
+// AcknowledgementMode AcknowledgementMode
 type AcknowledgementMode string
 
 const (
-	// Ack
+	// Ack AcknowledgementMode
 	Ack AcknowledgementMode = "ACK"
-	// Nack
+	// Nack AcknowledgementMode
 	Nack AcknowledgementMode = "NACK"
 )
 
-// IsNack
+// IsNack AcknowledgementMode
 func (a AcknowledgementMode) IsNack() bool {
 	return a == Nack
 }
 
-// IsAck
+// IsAck AcknowledgementMode
 func (a AcknowledgementMode) IsAck() bool {
 	return a == Ack
 }
 
-// ExchangeType
+// ExchangeType  ExchangeType
 type ExchangeType string
 
 const (

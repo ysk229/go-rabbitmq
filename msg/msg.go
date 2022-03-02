@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Message
+// Message struct
 type Message struct {
 	// Application or exchange specific fields,
 	// the headers exchange will inspect this field.
@@ -32,10 +32,10 @@ type Message struct {
 	Channel *channels.Channel
 }
 
-// MsgOption
+// MsgOption Msg Option
 type MsgOption func(*Message)
 
-// NewMessage
+// NewMessage New Message
 func NewMessage(opts ...MsgOption) *Message {
 	m := &Message{}
 	for _, opt := range opts {
@@ -46,21 +46,21 @@ func NewMessage(opts ...MsgOption) *Message {
 	return m
 }
 
-// WithOptionsChannel
+// WithOptionsChannel With Options Channel
 func WithOptionsChannel(ch *channels.Channel) MsgOption {
 	return func(m *Message) {
 		m.Channel = ch
 	}
 }
 
-// WithOptionsDeliveryMode
+// WithOptionsDeliveryMode With Options Delivery Mode
 func WithOptionsDeliveryMode(DeliveryMode uint8) MsgOption {
 	return func(m *Message) {
 		m.DeliveryMode = DeliveryMode
 	}
 }
 
-// WithOptionsBody
+// WithOptionsBody With Options Body
 func WithOptionsBody(Body string) MsgOption {
 	return func(m *Message) {
 		m.Body = []byte(Body)

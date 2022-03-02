@@ -1,6 +1,6 @@
 package msg
 
-// Ret
+// Ret struct
 type Ret struct {
 	Success    bool
 	Data       string
