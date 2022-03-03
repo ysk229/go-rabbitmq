@@ -93,7 +93,51 @@ NewClient("amqp://user:pass@localhost").GetProducer().Producer(
 
 }
 
+```
 
+### 🚀🚀 Concurrent Publisher
+
+one connect more channel publisher,Increase throughput in production
+
+```go
+    url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "10.1.2.7", 5672, "")
+    conn := connections.NewConnect().Open(url)
+    p := NewProducer(channels.NewChannel(conn.Connection))
+    job := make(chan string, 15)
+    //10 worker
+    for i := 0; i < 10; i++ {
+        go func(job <-chan string) {
+            exchangeName := "go-test"
+            routeKey := "go-test"
+            // new 10 mq channel
+            c := channels.NewChannel(conn.Connection)
+            for body := range job {
+                p.Producer(
+                msg.NewMessage(
+                    msg.WithOptionsChannel(c),
+                    msg.WithOptionsBody(body),
+                ),
+                WithOptionsProducer(&ProducerOpt{
+                    Exchange:     exchangeName,
+                    ExchangeType: lib.Topic,
+                    RouteKey:     routeKey,
+                    Mandatory:    true,
+                    ResendNum:    2,
+                }),
+                WithOptionsProducerCallBack(&CallBack{Fnc: func(ret msg.Ret) {
+                    log.Printf("call back %+v", ret)                
+                }}),
+                )
+            }
+        
+        }(job)
+    }
+    
+    for i := 0; i < 15; i++ {
+        job <- fmt.Sprintf("this is chan %d", i)
+    }
+    close(job)
+    <-time.After(30 * time.Second)
 ```
 
 
