@@ -100,7 +100,7 @@ NewClient("amqp://user:pass@localhost").GetProducer().Producer(
 one connect more channel publisher,Increase throughput in production
 
 ```go
-    url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "10.1.2.7", 5672, "")
+    url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
     conn := connections.NewConnect().Open(url)
     p := NewProducer(channels.NewChannel(conn.Connection))
     job := make(chan string, 15)
