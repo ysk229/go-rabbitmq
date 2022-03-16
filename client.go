@@ -8,6 +8,7 @@ import (
 	"github.com/ysk229/go-rabbitmq/consumers"
 	"github.com/ysk229/go-rabbitmq/producers"
 	"log"
+	"time"
 )
 
 // Client  struct
@@ -40,6 +41,7 @@ func (c *Client) ReConnection(url string) {
 			log.Println("Connect is closed ", c.GetConnect().IsClosed(), ",Channel is closed ", c.GetChannel().IsClosed())
 
 		}
+		time.Sleep(time.Second * time.Duration(5))
 	}
 }
 
