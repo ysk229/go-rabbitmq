@@ -73,9 +73,10 @@ func (p *Producer) Producer(m *msg.Message, opts ...ProducerOption) {
 		opt(p)
 	}
 	ch := m.Channel
-	ch.SetConfirmChan(ch.ConfirmOne(make(chan amqp.Confirmation, 1)))
-	ch.SetReturnChan(ch.NotifyReturn(make(chan amqp.Return, 1)))
-	//defer ch.Close()
+	if ch.GetConfirmChan() == nil {
+		ch.SetConfirmChan(ch.ConfirmOne(make(chan amqp.Confirmation, 1)))
+		ch.SetReturnChan(ch.NotifyReturn(make(chan amqp.Return, 1)))
+	}
 	exchangeNum := 0
 	queueNum := 0
 	body := string(m.Body)
