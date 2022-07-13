@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	mq := rabbitmq.NewClient("amqp://admin:123456@10.1.2.7:5672")
+	mq := rabbitmq.NewClient("amqp://admin:123456@127.0.0.1:5672")
 	mq.GetConsumer().Consumer(
 		mq.GetChan(),
 		consumers.WithOptionsConsumer(
