@@ -133,3 +133,43 @@ func TestClientExchange(t *testing.T) {
 	log.Println(channelClient)
 	log.Println(channelClient2)
 }
+
+func TestClientProducers(t *testing.T) {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	//new client mq
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "10.1.2.7", 5672, "")
+	mq := NewClient(url)
+	d := make(chan string, 10)
+	go func() {
+		for i := 0; i < 10; i++ {
+			d <- fmt.Sprintf("this is chan %d", i)
+			//time.Sleep(3*time.Second)
+		}
+		close(d)
+	}()
+
+	p := mq.NewChanProducer()
+	for c := range d {
+		p.Producer(
+			msg.NewMessage(
+				//msg.WithOptionsChannel(channels.NewChannel(mq.Connection)),
+				msg.WithOptionsChannel(p.Channel),
+				msg.WithOptionsBody("sdfdsfd"+c),
+			),
+			producers.WithOptionsProducer(&producers.ProducerOpt{
+				Exchange:     "exchangeName",
+				ExchangeType: lib.Topic,
+				RouteKey:     "routeKey",
+				Mandatory:    true,
+				ResendNum:    2,
+			}),
+			producers.WithOptionsProducerCallBack(&producers.CallBack{Fnc: func(ret msg.Ret) {
+				log.Printf("call back %+v", ret)
+
+			}}),
+		)
+
+	}
+
+	//select {}
+}

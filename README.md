@@ -95,6 +95,51 @@ NewClient("amqp://user:pass@localhost").GetProducer().Producer(
 
 ```
 
+### 🚀🚀 Concurrent Consumer
+
+one connect more channel Consumer,Increase throughput in production
+
+```go
+    url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
+    conn := connections.NewConnect().Open(url)
+    //new mq channel
+    channelClient := channels.NewChannel(conn.Connection)
+    exchangeName := "go-test"
+    routeKey := "go-test"
+    q := "go-test"
+    job := make(chan string, 15)
+    //10 worker
+    for i := 0; i < 10; i++ {
+        go func(job <-chan string) {
+        NewConsumer(channelClient).Consumer(
+            channelClient,
+            WithOptionsConsumer(
+              &ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
+            ),
+            WithOptionsConsumerCallBack(
+                &CallBack{Fnc: func(delivery Delivery) {                
+                    time.Sleep(3 * time.Second)
+                    if delivery.DeliveryTag == 1 {
+                         _ = delivery.Ack(false)
+                    } else {
+                        _ = delivery.Nack(false, false)
+                    }
+                    log.Printf("%+v", delivery)
+                },
+            },
+            ),
+        )
+        }(job)
+    }
+    
+    for i := 0; i < 15; i++ {
+        job <- fmt.Sprintf("this is chan %d", i)
+    }
+    close(job)
+    <-time.After(30 * time.Second)
+```
+
+
 ### 🚀🚀 Concurrent Publisher
 
 one connect more channel publisher,Increase throughput in production
@@ -139,7 +184,6 @@ one connect more channel publisher,Increase throughput in production
     close(job)
     <-time.After(30 * time.Second)
 ```
-
 
 ## Other usage examples
 
