@@ -137,7 +137,7 @@ func TestClientExchange(t *testing.T) {
 func TestClientProducers(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	//new client mq
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "10.1.2.7", 5672, "")
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
 	mq := NewClient(url)
 	d := make(chan string, 10)
 	go func() {
