@@ -176,6 +176,7 @@ func (c *Consumer) init() {
 	}
 }
 
+// GracefulShutdown consumer
 func (c *Consumer) GracefulShutdown() {
 	if c.opt.GracefulDelay == 0 {
 		c.opt.GracefulDelay = 10

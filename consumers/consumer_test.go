@@ -139,8 +139,6 @@ func TestConcurrentConsumer(t *testing.T) {
 	//new client mq
 	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
 	conn := connections.NewConnect().Open(url)
-	//new mq channel
-	channelClient := channels.NewChannel(conn.Connection)
 	exchangeName := "go-test"
 	routeKey := "go-test"
 	q := "go-test"
@@ -148,6 +146,8 @@ func TestConcurrentConsumer(t *testing.T) {
 	//10 worker
 	for i := 0; i < 10; i++ {
 		go func(job <-chan string) {
+			//new mq channel
+			channelClient := channels.NewChannel(conn.Connection)
 			NewConsumer(channelClient).Consumer(
 				channelClient,
 				WithOptionsConsumer(
