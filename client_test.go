@@ -82,8 +82,9 @@ func TestConsumer(t *testing.T) {
 				&consumers.ConsumerOpt{QueueName: q.Name, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
 			),
 			consumers.WithOptionsConsumerCallBack(
-				&consumers.CallBack{Fnc: func(delivery consumers.Delivery) {
+				&consumers.CallBack{Fnc: func(delivery consumers.Delivery) error {
 					log.Printf("%+v", delivery)
+					return nil
 				},
 				},
 			),
