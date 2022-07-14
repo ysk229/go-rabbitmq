@@ -7,6 +7,8 @@ import (
 	"github.com/ysk229/go-rabbitmq/connections"
 	"github.com/ysk229/go-rabbitmq/lib"
 	"log"
+	"os"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -118,6 +120,16 @@ func TestGracefulShutdownConsumer(t *testing.T) {
 				},
 			),
 		)
+	}()
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		p, _ := os.FindProcess(os.Getpid())
+		log.Println(p.Pid)
+		err := p.Signal(syscall.SIGINT)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}()
 
 	c.GracefulShutdown()
