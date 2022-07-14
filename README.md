@@ -57,8 +57,9 @@ mq.GetConsumer().Consumer(
     ),
     consumers.WithOptionsConsumerCallBack(
         &consumers.CallBack{
-			Fnc: func(delivery consumers.Delivery) {
+			Fnc: func(delivery consumers.Delivery) error {
 				 log.Printf("%+v", delivery)
+				 return nil
             },
         },
     ),
@@ -97,7 +98,7 @@ NewClient("amqp://user:pass@localhost").GetProducer().Producer(
 
 ### 🚀🚀 Concurrent Consumer
 
-one connect more channel Consumer,Increase throughput in production
+one connect more channel Consumer,Increase throughput in Consumer
 
 ```go
     url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
@@ -117,7 +118,7 @@ one connect more channel Consumer,Increase throughput in production
               &ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
             ),
             WithOptionsConsumerCallBack(
-                &CallBack{Fnc: func(delivery Delivery) {                
+                &CallBack{Fnc: func(delivery Delivery) error{                
                     time.Sleep(3 * time.Second)
                     if delivery.DeliveryTag == 1 {
                          _ = delivery.Ack(false)
@@ -125,6 +126,7 @@ one connect more channel Consumer,Increase throughput in production
                         _ = delivery.Nack(false, false)
                     }
                     log.Printf("%+v", delivery)
+					return nil
                 },
             },
             ),

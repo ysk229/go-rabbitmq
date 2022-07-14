@@ -29,7 +29,7 @@ func main() {
 			&consumers.ConsumerOpt{QueueName: *queue, RoutingKey: *bindingKey, Exchange: *exchange, ExchangeType: lib.Topic},
 		),
 		consumers.WithOptionsConsumerCallBack(
-			&consumers.CallBack{Fnc: func(delivery consumers.Delivery) {
+			&consumers.CallBack{Fnc: func(delivery consumers.Delivery) error {
 				time.Sleep(3 * time.Second)
 				if delivery.DeliveryTag == 1 {
 					_ = delivery.Ack(false)
@@ -37,6 +37,7 @@ func main() {
 					_ = delivery.Nack(false, false)
 				}
 				log.Printf("%+v", delivery)
+				return nil
 			},
 			},
 		),

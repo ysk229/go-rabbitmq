@@ -24,8 +24,8 @@ type ProducerOpt struct {
 	Exchange     string
 	ExchangeType lib.ExchangeType
 	RouteKey     string
-	ResendDelay  time.Duration //消息发送失败后，多久秒重发,默认是3s
-	ResendNum    int           //消息重发次数
+	ResendDelay  time.Duration //How many seconds to resend the message after it fails,default is 3s
+	ResendNum    int           //Number of message resends, default is 3 times
 }
 
 // CallBack  Call Back
@@ -56,6 +56,9 @@ func WithOptionsProducer(opt *ProducerOpt) ProducerOption {
 		p.opt = opt
 		if p.opt.ResendDelay == 0 {
 			p.opt.ResendDelay = 3
+		}
+		if p.opt.ResendNum == 0 {
+			p.opt.ResendNum = 3
 		}
 	}
 }

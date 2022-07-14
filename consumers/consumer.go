@@ -1,6 +1,7 @@
 package consumers
 
 import (
+	"context"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/ysk229/go-rabbitmq/bindings"
 	"github.com/ysk229/go-rabbitmq/channels"
@@ -9,6 +10,10 @@ import (
 	"github.com/ysk229/go-rabbitmq/options"
 	"github.com/ysk229/go-rabbitmq/queues"
 	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 )
 
@@ -33,14 +38,15 @@ type ConsumerOpt struct {
 	NoWait  bool
 	Args    lib.Table
 
-	ResendDelay time.Duration //消息发送失败后，多久秒重发,默认是3s
-	ResendNum   int           //消息重发次数
+	ReReceiveDelay time.Duration //After the message consumption failure, how long seconds to resend,default is 3s
+	ReReceiveNum   int           //Number of message reconsumption,default is 3 num ，-1 to disable the retry mechanism
+	GracefulDelay  time.Duration //default is 10s
 
 }
 
 // CallBack call back consumer
 type CallBack struct {
-	Fnc func(Delivery)
+	Fnc func(Delivery) error
 }
 
 // Delivery consumer result data
@@ -54,13 +60,15 @@ type ConsumerOption func(*Consumer)
 // Consumer consumer
 type Consumer struct {
 	*channels.Channel
-	opt *ConsumerOpt
-	cb  *CallBack
+	opt   *ConsumerOpt
+	cb    *CallBack
+	wg    *sync.WaitGroup
+	close bool
 }
 
 // NewConsumer New Consumer
 func NewConsumer(ch *channels.Channel) *Consumer {
-	c := &Consumer{Channel: ch}
+	c := &Consumer{Channel: ch, wg: &sync.WaitGroup{}, opt: &ConsumerOpt{}}
 	return c
 }
 
@@ -68,8 +76,14 @@ func NewConsumer(ch *channels.Channel) *Consumer {
 func WithOptionsConsumer(opt *ConsumerOpt) ConsumerOption {
 	return func(c *Consumer) {
 		c.opt = opt
-		if c.opt.ResendDelay == 0 {
-			c.opt.ResendDelay = 3
+		if c.opt.ReReceiveDelay == 0 {
+			c.opt.ReReceiveDelay = 3
+		}
+		if c.opt.ReReceiveNum == 0 {
+			c.opt.ReReceiveNum = 3
+		}
+		if c.opt.GracefulDelay == 0 {
+			c.opt.GracefulDelay = 10
 		}
 		c.init()
 	}
@@ -87,6 +101,7 @@ func (c *Consumer) Consumer(ch *channels.Channel, opts ...ConsumerOption) {
 	for _, opt := range opts {
 		opt(c)
 	}
+	c.wg.Add(1)
 	c.subscribe(ch)
 }
 
@@ -107,6 +122,7 @@ func (c *Consumer) subscribe(ch *channels.Channel) {
 		return
 	}
 	//
+	defer c.wg.Done()
 	log.Printf("subscribed...")
 	for d := range deliveries {
 		log.Printf(
@@ -115,11 +131,30 @@ func (c *Consumer) subscribe(ch *channels.Channel) {
 			d.DeliveryTag,
 			d.Body,
 		)
+		if c.close {
+			log.Printf("handle: deliveries channel closed")
+			// No new messages are processed after shutdown, and the message queue is notified to re-deliver the currently received messages
+			_ = d.Nack(true, true)
+			break
+		}
+
 		if c.cb != nil {
-			c.cb.Fnc(Delivery{d})
+			err = c.cb.Fnc(Delivery{d})
+			if err != nil && c.opt.ReReceiveNum > 1 {
+				for i := 1; i < c.opt.ReReceiveNum; i++ {
+					err := c.cb.Fnc(Delivery{d})
+					if err == nil {
+						break
+					}
+					if i == c.opt.ReReceiveNum-1 {
+						_ = d.Nack(false, true)
+					}
+					time.Sleep(c.opt.ReReceiveDelay)
+				}
+			}
 		}
 	}
-	log.Printf("handle: deliveries channel closed")
+
 }
 
 func (c *Consumer) init() {
@@ -138,5 +173,30 @@ func (c *Consumer) init() {
 	err = c.Channel.BindingQueue(bindings.NewBinding(&options.QueueBind{Queue: q.Name, Exchange: exchangeName, RoutingKey: c.opt.RoutingKey}))
 	if err != nil {
 		log.Println(err)
+	}
+}
+
+func (c *Consumer) GracefulShutdown() {
+	if c.opt.GracefulDelay == 0 {
+		c.opt.GracefulDelay = 10
+	}
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	s := <-sc
+	log.Println("Got signal:", s)
+	c.close = true
+	done := make(chan struct{})
+	go func() {
+		c.wg.Wait()
+		done <- struct{}{}
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), c.opt.GracefulDelay*time.Second)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		_ = c.GetChannel().Close()
+		log.Fatalf("RabbitMQ consumer did not shut down after %d seconds \n", c.opt.GracefulDelay)
+	case <-done:
+		_ = c.GetChannel().Close()
 	}
 }

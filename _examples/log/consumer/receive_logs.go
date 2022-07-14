@@ -16,7 +16,7 @@ func main() {
 			&consumers.ConsumerOpt{QueueName: "", RoutingKey: "", Exchange: "logs", ExchangeType: lib.Fanout},
 		),
 		consumers.WithOptionsConsumerCallBack(
-			&consumers.CallBack{Fnc: func(delivery consumers.Delivery) {
+			&consumers.CallBack{Fnc: func(delivery consumers.Delivery) error {
 				time.Sleep(3 * time.Second)
 				if delivery.DeliveryTag == 1 {
 					_ = delivery.Ack(false)
@@ -24,6 +24,7 @@ func main() {
 					_ = delivery.Nack(false, false)
 				}
 				log.Printf("%+v", delivery)
+				return nil
 			},
 			},
 		),

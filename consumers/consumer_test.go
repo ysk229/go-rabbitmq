@@ -1,6 +1,7 @@
 package consumers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/ysk229/go-rabbitmq/channels"
 	"github.com/ysk229/go-rabbitmq/connections"
@@ -28,7 +29,7 @@ func TestConsumer(t *testing.T) {
 				&ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
 			),
 			WithOptionsConsumerCallBack(
-				&CallBack{Fnc: func(delivery Delivery) {
+				&CallBack{Fnc: func(delivery Delivery) error {
 
 					time.Sleep(3 * time.Second)
 					if delivery.DeliveryTag == 1 {
@@ -37,6 +38,7 @@ func TestConsumer(t *testing.T) {
 						_ = delivery.Nack(false, false)
 					}
 					log.Printf("%+v", delivery)
+					return nil
 				},
 				},
 			),
@@ -45,6 +47,80 @@ func TestConsumer(t *testing.T) {
 
 	log.Printf("running for %s", "10s")
 	time.Sleep(10 * time.Second)
+}
+func TestRetryConsumer(t *testing.T) {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	//new client mq
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
+	conn := connections.NewConnect().Open(url)
+	//new mq channel
+	channelClient := channels.NewChannel(conn.Connection)
+	exchangeName := "go-test"
+	routeKey := "go-test"
+	q := "go-test"
+	//i := 0
+	go func() {
+		NewConsumer(channelClient).Consumer(
+			channelClient,
+			WithOptionsConsumer(
+				&ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
+			),
+			WithOptionsConsumerCallBack(
+				&CallBack{Fnc: func(delivery Delivery) error {
+
+					time.Sleep(3 * time.Second)
+					if delivery.DeliveryTag == 1 {
+						_ = delivery.Ack(false)
+					} else {
+						_ = delivery.Nack(false, false)
+					}
+					log.Printf("%+v", delivery)
+					return errors.New("error is nil then you can't retry, retry three times by default")
+				},
+				},
+			),
+		)
+	}()
+
+	log.Printf("running for %s", "10s")
+	time.Sleep(10 * time.Second)
+}
+func TestGracefulShutdownConsumer(t *testing.T) {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	//new client mq
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", "admin", "123456", "127.0.0.1", 5672, "")
+	conn := connections.NewConnect().Open(url)
+	//new mq channel
+	channelClient := channels.NewChannel(conn.Connection)
+	exchangeName := "go-test"
+	routeKey := "go-test"
+	q := "go-test"
+	c := NewConsumer(channelClient)
+	//Graceful exit
+	go func() {
+		c.Consumer(
+			channelClient,
+			WithOptionsConsumer(
+				&ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
+			),
+			WithOptionsConsumerCallBack(
+				&CallBack{Fnc: func(delivery Delivery) error {
+
+					time.Sleep(3 * time.Second)
+					if delivery.DeliveryTag == 1 {
+						_ = delivery.Ack(false)
+					} else {
+						_ = delivery.Nack(false, false)
+					}
+					log.Printf("%+v", delivery)
+					return nil
+				},
+				},
+			),
+		)
+	}()
+
+	c.GracefulShutdown()
 }
 func TestConcurrentConsumer(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -66,7 +142,7 @@ func TestConcurrentConsumer(t *testing.T) {
 					&ConsumerOpt{QueueName: q, RoutingKey: routeKey, Exchange: exchangeName, ExchangeType: lib.Topic},
 				),
 				WithOptionsConsumerCallBack(
-					&CallBack{Fnc: func(delivery Delivery) {
+					&CallBack{Fnc: func(delivery Delivery) error {
 
 						time.Sleep(3 * time.Second)
 						if delivery.DeliveryTag == 1 {
@@ -75,6 +151,7 @@ func TestConcurrentConsumer(t *testing.T) {
 							_ = delivery.Nack(false, false)
 						}
 						log.Printf("%+v", delivery)
+						return nil
 					},
 					},
 				),
