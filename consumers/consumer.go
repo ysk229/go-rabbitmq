@@ -195,7 +195,7 @@ func (c *Consumer) GracefulShutdown() {
 	select {
 	case <-ctx.Done():
 		_ = c.GetChannel().Close()
-		log.Fatalf("RabbitMQ consumer did not shut down after %d seconds \n", c.opt.GracefulDelay)
+		log.Printf("RabbitMQ consumer did not shut down after %d seconds \n", c.opt.GracefulDelay)
 	case <-done:
 		_ = c.GetChannel().Close()
 	}
