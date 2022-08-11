@@ -3,10 +3,10 @@ package rabbitmq
 import (
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/ysk229/go-rabbitmq/channels"
-	"github.com/ysk229/go-rabbitmq/connections"
-	"github.com/ysk229/go-rabbitmq/consumers"
-	"github.com/ysk229/go-rabbitmq/producers"
+	"github.com/ysk229/go-rabbitmq/v2/channels"
+	"github.com/ysk229/go-rabbitmq/v2/connections"
+	"github.com/ysk229/go-rabbitmq/v2/consumers"
+	"github.com/ysk229/go-rabbitmq/v2/producers"
 	"log"
 	"time"
 )

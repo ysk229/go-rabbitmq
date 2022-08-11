@@ -1,8 +1,8 @@
 package msg
 
 import (
-	"github.com/ysk229/go-rabbitmq/channels"
-	"github.com/ysk229/go-rabbitmq/lib"
+	"github.com/ysk229/go-rabbitmq/v2/channels"
+	"github.com/ysk229/go-rabbitmq/v2/lib"
 	"time"
 )
 

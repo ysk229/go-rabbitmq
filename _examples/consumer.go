@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"github.com/ysk229/go-rabbitmq"
-	"github.com/ysk229/go-rabbitmq/consumers"
-	"github.com/ysk229/go-rabbitmq/lib"
+	"github.com/ysk229/go-rabbitmq/v2"
+	"github.com/ysk229/go-rabbitmq/v2/consumers"
+	"github.com/ysk229/go-rabbitmq/v2/lib"
 	"log"
 	"time"
 )

@@ -1,6 +1,6 @@
 package bindings
 
-import "github.com/ysk229/go-rabbitmq/options"
+import "github.com/ysk229/go-rabbitmq/v2/options"
 
 // Binding binding struct
 type Binding struct {

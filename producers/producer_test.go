@@ -2,10 +2,10 @@ package producers
 
 import (
 	"fmt"
-	"github.com/ysk229/go-rabbitmq/channels"
-	"github.com/ysk229/go-rabbitmq/connections"
-	"github.com/ysk229/go-rabbitmq/lib"
-	"github.com/ysk229/go-rabbitmq/msg"
+	"github.com/ysk229/go-rabbitmq/v2/channels"
+	"github.com/ysk229/go-rabbitmq/v2/connections"
+	"github.com/ysk229/go-rabbitmq/v2/lib"
+	"github.com/ysk229/go-rabbitmq/v2/msg"
 	"log"
 	"testing"
 	"time"

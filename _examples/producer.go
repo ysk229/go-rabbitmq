@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"github.com/ysk229/go-rabbitmq"
-	"github.com/ysk229/go-rabbitmq/channels"
-	"github.com/ysk229/go-rabbitmq/lib"
-	"github.com/ysk229/go-rabbitmq/msg"
-	"github.com/ysk229/go-rabbitmq/producers"
+	"github.com/ysk229/go-rabbitmq/v2"
+	"github.com/ysk229/go-rabbitmq/v2/channels"
+	"github.com/ysk229/go-rabbitmq/v2/lib"
+	"github.com/ysk229/go-rabbitmq/v2/msg"
+	"github.com/ysk229/go-rabbitmq/v2/producers"
 	"log"
 )
 

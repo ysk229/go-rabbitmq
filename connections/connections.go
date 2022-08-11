@@ -2,7 +2,7 @@ package connections
 
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/ysk229/go-rabbitmq/channels"
+	"github.com/ysk229/go-rabbitmq/v2/channels"
 	"log"
 )
 

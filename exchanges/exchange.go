@@ -1,7 +1,7 @@
 package exchanges
 
 import (
-	"github.com/ysk229/go-rabbitmq/options"
+	"github.com/ysk229/go-rabbitmq/v2/options"
 )
 
 // Exchange exchange

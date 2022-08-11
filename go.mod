@@ -1,4 +1,4 @@
-module github.com/ysk229/go-rabbitmq
+module github.com/ysk229/go-rabbitmq/v2
 
 go 1.17
 

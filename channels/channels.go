@@ -2,10 +2,10 @@ package channels
 
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/ysk229/go-rabbitmq/bindings"
-	"github.com/ysk229/go-rabbitmq/exchanges"
-	"github.com/ysk229/go-rabbitmq/lib"
-	"github.com/ysk229/go-rabbitmq/queues"
+	"github.com/ysk229/go-rabbitmq/v2/bindings"
+	"github.com/ysk229/go-rabbitmq/v2/exchanges"
+	"github.com/ysk229/go-rabbitmq/v2/lib"
+	"github.com/ysk229/go-rabbitmq/v2/queues"
 	"log"
 )
 
