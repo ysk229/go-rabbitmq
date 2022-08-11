@@ -34,7 +34,7 @@ $ docker run --name rabbitmq --hostname rabbitmq-test-node-1 -p 15672:15672 -p 5
 
 2. Download rabbitmq package by using:
 ```bash
-go get github.com/ysk229/go-rabbitmq
+go get github.com/ysk229/go-rabbitmq/v2
 ```
 
 ## 🚀 Quick Start Consumer
@@ -86,8 +86,9 @@ NewClient("amqp://user:pass@localhost").GetProducer().Producer(
     Mandatory:    true,
     ResendNum:    2}),
     producers.WithOptionsProducerCallBack(&producers.CallBack{
-		Fnc: func(ret msg.Ret) {
+		Fnc: func(ret msg.Ret)  error {
             log.Printf("call back %+v", ret)
+			return nil
         }
 	}),
 )
@@ -171,8 +172,9 @@ one connect more channel publisher,Increase throughput in production
                     Mandatory:    true,
                     ResendNum:    2,
                 }),
-                WithOptionsProducerCallBack(&CallBack{Fnc: func(ret msg.Ret) {
+                WithOptionsProducerCallBack(&CallBack{Fnc: func(ret msg.Ret) error{
                     log.Printf("call back %+v", ret)                
+					return nil
                 }}),
                 )
             }
