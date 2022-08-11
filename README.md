@@ -34,7 +34,7 @@ $ docker run --name rabbitmq --hostname rabbitmq-test-node-1 -p 15672:15672 -p 5
 
 2. Download rabbitmq package by using:
 ```bash
-go get github.com/ysk229/go-rabbitmq
+go get github.com/ysk229/go-rabbitmq/v2
 ```
 
 ## 🚀 Quick Start Consumer
